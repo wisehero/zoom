@@ -14,16 +14,26 @@ app.get("/*", (req, res) => res.redirect("/"));
 const handleListen = () => console.log(`listening on http://localhost:3000`);
 
 const server = http.createServer(app);
-
 const wss = new WebSocket.Server({ server }); // webSocket Server 생성
 
+const sockets = []; // fake database
+
 wss.on("connection", (socket) => {
+  sockets.push(socket);
+  socket["nickname"] = "Someone";
   console.log("Connected to Browser ✅");
   socket.on("close", () => console.log("Disconnected from the Browser ❌"));
-  socket.on("message", (message) => {
-    console.log(message);
+  socket.on("message", (msg) => {
+    const message = JSON.parse(msg);
+    switch (message.type) {
+      case "new_message":
+        sockets.forEach((aSocket) =>
+          aSocket.send(`${socket.nickname} : ${message.payload}`)
+        );
+      case "nickname":
+        socket["nickname"] = message.payload;
+    }
   });
-  socket.send("hi");
 });
 
 server.listen(3000, handleListen);
